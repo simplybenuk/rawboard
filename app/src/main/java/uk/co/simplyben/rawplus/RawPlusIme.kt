@@ -25,7 +25,7 @@ import uk.co.simplyben.rawplus.speech.LocalDictation
 class RawPlusIme : InputMethodService(), LocalDictation.Listener {
     private val draft = Draft()
     private val editor = EditClient { EditingRules.load(this) }
-    private val localEditor = lazy { LlamaEditor(this) { EditingRules.load(this) } }
+    private val chatGptEditor = lazy { ChatGptEditClient(this) { EditingRules.load(this) } }
     private var resultPromptVersion = EditProtocol.PROMPT_VERSION
     private val history by lazy { HistoryStore(applicationContext) }
     private val historyExecutor = Executors.newSingleThreadExecutor()
@@ -306,7 +306,7 @@ class RawPlusIme : InputMethodService(), LocalDictation.Listener {
             }
             val canChoose = activeEditor && !sensitive && captureState == LocalDictation.State.IDLE && draft.unconfirmed.isBlank()
             EditMode.entries.forEach { mode ->
-                val qualifier = if (EditingSettings(this).provider == EditingProvider.LLAMA) "llama.cpp · on device" else "uses API credit"
+                val qualifier = if (EditingSettings(this).provider == EditingProvider.CHATGPT) "uses ChatGPT plan" else "uses API credit"
                 item(if (mode == EditMode.RAW) "Raw · on device" else "${mode.label} · $qualifier",
                     canChoose && (mode == EditMode.RAW || draft.original.isNotBlank())) { chooseMode(mode) }
             }
@@ -390,7 +390,7 @@ class RawPlusIme : InputMethodService(), LocalDictation.Listener {
         popup?.dismiss()
         dictation.destroy()
         editor.close()
-        if (localEditor.isInitialized()) localEditor.value.close()
+        if (chatGptEditor.isInitialized()) chatGptEditor.value.close()
         clearDraft()
         historyExecutor.shutdown()
         super.onDestroy()
@@ -439,7 +439,7 @@ class RawPlusIme : InputMethodService(), LocalDictation.Listener {
         notice = when (config.provider) {
             EditingProvider.OPENAI -> "Editing ${draft.mode.label} with your OpenAI API credit. Your original transcript is sent."
             EditingProvider.BACKEND -> "Editing ${draft.mode.label}. Your original transcript goes to your backend and OpenAI."
-            EditingProvider.LLAMA -> "Editing ${draft.mode.label} on this phone with llama.cpp. This may take a minute. No API credit used."
+            EditingProvider.CHATGPT -> "Editing ${draft.mode.label} using your ChatGPT plan. Your original transcript is sent to OpenAI."
         }
         val completed: (Result<String>) -> Unit = completed@ { result ->
             if (!activeEditor || sensitive) return@completed
@@ -447,7 +447,7 @@ class RawPlusIme : InputMethodService(), LocalDictation.Listener {
                 if (draft.accept(request, text)) {
                     resultPromptVersion = when (config.provider) {
                         EditingProvider.OPENAI -> EditProtocol.PROMPT_VERSION
-                        EditingProvider.LLAMA -> "${EditProtocol.PROMPT_VERSION};llama.cpp;qwen2.5-1.5b-q4_k_m"
+                        EditingProvider.CHATGPT -> "${EditProtocol.PROMPT_VERSION};chatgpt-plan;${chatGptEditor.value.acceptedModel.orEmpty()}"
                         EditingProvider.BACKEND -> "backend-unverified"
                     }
                     recordHistory("edited", request.mode, text, request.transcript,
@@ -460,7 +460,7 @@ class RawPlusIme : InputMethodService(), LocalDictation.Listener {
                 if (draft.fail(request)) { notice = failure.message ?: "Editing failed. Select Raw or retry."; render() }
             }
         }
-        if (config.provider == EditingProvider.LLAMA) localEditor.value.edit(request, completed)
+        if (config.provider == EditingProvider.CHATGPT) chatGptEditor.value.edit(request, completed)
         else editor.edit(config, request, completed)
     }
 
@@ -493,7 +493,7 @@ class RawPlusIme : InputMethodService(), LocalDictation.Listener {
 
     private fun cancelEditing() {
         editor.cancel()
-        if (localEditor.isInitialized()) localEditor.value.cancel()
+        if (chatGptEditor.isInitialized()) chatGptEditor.value.cancel()
     }
 
     private fun endEditor() {
@@ -526,8 +526,8 @@ class RawPlusIme : InputMethodService(), LocalDictation.Listener {
         if (!::insert.isInitialized || !::panel.isInitialized) return
         val capturing = captureState != LocalDictation.State.IDLE
         val usable = activeEditor && !sensitive
-        val localEditing = EditingSettings(this).provider == EditingProvider.LLAMA
-        panel.keepScreenOn = usable && (capturing || (localEditing && draft.pending))
+        val usingChatGpt = EditingSettings(this).provider == EditingProvider.CHATGPT
+        panel.keepScreenOn = usable && (capturing || draft.pending)
         status.text = if (sensitive) "Dictation is off for this private or non-text field. Use a normal keyboard."
             else if (captureState == LocalDictation.State.LISTENING) "Listening on device. Screen stays awake."
             else notice
@@ -540,7 +540,7 @@ class RawPlusIme : InputMethodService(), LocalDictation.Listener {
             button.setTextColor(if (selected) Ui.onPrimary(this) else Ui.ink(this))
             button.background = Ui.controlBackground(if (selected) Ui.green(this) else Ui.secondary(this), this)
             button.contentDescription = mode.label + (if (selected) ", selected. " else ". ") +
-                (if (mode == EditMode.RAW) "On device" else if (localEditing) "llama.cpp on this device" else "AI edit. Uses API credit")
+                (if (mode == EditMode.RAW) "On device" else if (usingChatGpt) "Using ChatGPT plan. Uses your shared allowance" else "AI edit. Uses API credit")
             button.alpha = if (button.isEnabled) 1f else 0.45f
         }
         val result = draft.selectedText
@@ -598,7 +598,7 @@ class RawPlusIme : InputMethodService(), LocalDictation.Listener {
             else "Cancel unfinished dictation. Keep confirmed words"
         retry.visibility = if (usable && !capturing && !draft.pending && draft.original.isNotBlank() &&
             draft.mode != EditMode.RAW && result.isNullOrBlank() && draft.unconfirmed.isBlank()) View.VISIBLE else View.GONE
-        retry.contentDescription = if (localEditing) "Retry llama.cpp on device" else "Retry AI edit. Uses API credit"
+        retry.contentDescription = if (usingChatGpt) "Retry using your ChatGPT plan" else "Retry AI edit. Uses API credit"
         insert.isEnabled = usable && !capturing && !draft.pending && draft.unconfirmed.isBlank() && !result.isNullOrBlank()
         insert.text = "Insert ${draft.mode.label}"
         insert.contentDescription = "Insert ${draft.mode.label}. Does not send or post"

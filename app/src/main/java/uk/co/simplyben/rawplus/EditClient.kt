@@ -25,8 +25,8 @@ class EditClient(private val skill: () -> String) {
 
     fun edit(config: EditingConfig, request: EditRequest, callback: (Result<String>) -> Unit) {
         cancel()
-        if (!config.provider.external) {
-            callback(Result.failure(IllegalArgumentException("On-device editing cannot use the network client.")))
+        if (config.provider !in setOf(EditingProvider.OPENAI, EditingProvider.BACKEND)) {
+            callback(Result.failure(IllegalArgumentException("This provider requires its own authorization and transport.")))
             return
         }
         val run = generation

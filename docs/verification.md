@@ -2,7 +2,29 @@
 
 Checked 20 October 2026. This file distinguishes completed checks from device-dependent acceptance.
 
-## Version 0.1.6, llama.cpp replacement
+## Version 0.1.7, ChatGPT plan sign-in
+
+The user reports that llama.cpp works on their Pixel but is too slow to use. Version 0.1.7 retires local editing and implements the official open-source/local-app Sign in with ChatGPT protocol. This is not a recorded ChatGPT sign-in or model-inference success. No real credentials, imported sessions or paid requests were used during implementation or verification.
+
+- Authentication uses this app's own dynamic public-client registration, a persisted opaque installation ID, system-browser authorization and a temporary loopback callback. PKCE, state, nonce, issued-client binding and RSA-signed identity verification are covered by pure protocol tests. Encrypted session storage is separate from the existing API credential and text journal. Refresh serialization and session epochs are source-reviewed; real Android Keystore, browser return and refresh round trips still require Pixel testing.
+- The ChatGPT provider loads the authenticated catalog and requires a deliberate model choice. Its transport uses public Responses with array input, `store:false` and `stream:true`, the unchanged full Raw+ instructions, and the exact original transcript. It accepts only completed assistant text. Tests reject interrupted, malformed, failed, refused, oversized and inconsistent streams, including failure after text deltas. These tests use synthetic messages, not a live service.
+- Independent source review covered OAuth identity/client binding, trusted endpoints, credential separation, refresh/sign-out races, stale-result rejection, browser lifecycle and the inference adapter. A recovery issue was found and fixed: reconnecting an identity-only or signed-out saved registration now explicitly requests plan consent with `prompt=consent`. New registrations and already-authorized returning accounts retain ordinary sign-in behavior. The regression test covers each case.
+- API-key editing remains a separate, explicitly selected path. Retired NANO/LLAMA preferences select an unconfigured ChatGPT provider without decrypting or using the saved cloud key. Raw stays local, starts each recording and remains available after errors. Only an explicit Raw+ or Polished action requests inference. Signing in, loading models, saving a model or choosing a provider sends no draft.
+- Local-model Kotlin adapters, tests and Gradle native integration are removed. C++ and vendored source remain unbuilt reference files after automatic approval review rejected a broad directory deletion. They do not require the NDK or add native libraries to this build. Previously downloaded weights remain on the phone until the user chooses Delete downloaded local model. History and existing cloud credentials are retained.
+
+The final `:app:assembleDebug :app:testDebugUnitTest :app:lintDebug` run passes after the consent fix. All 80 JVM tests pass with no failures, errors or skips. Lint reports 0 errors and 3 warnings: the persisted one-time plan welcome uses synchronous preferences, and the pinned compile/target SDK remains 35. No baseline or disabled checks were added. The initial clean build also passed before that focused recovery fix. All 14 optional backend HTTP tests pass using mocked upstream responses; a scoped native retry supplied loopback access after the sandbox blocked the local test server.
+
+Final package inspection confirms version 0.1.7/code 8, minimum API 31, target API 35, exactly RECORD_AUDIO and INTERNET permissions, disabled backups and non-exported Providers, History and ChatGPT sign-in Activities. The package contains the new ChatGPT classes, no native `.so` libraries, no model weights and no retired Llama/Nano/ML Kit runtime classes. `zipalign` succeeds. `apksigner` verifies one v2 signer with the same certificate as earlier distributed APKs, SHA-256 `e04c846f3d646bd6cfc81504b64b930c87f447299e01552947a49cdde7b601be`.
+
+APK: [rawplus-keyboard-0.1.7-debug.apk](https://drive.google.com/file/d/196aHRKP2Vmr0iYtY1p97q5H4EvrzjFNV/view?usp=drivesdk), also retained at `artifacts/rawplus-keyboard-0.1.7-debug.apk`, 3,298,688 bytes. Drive upload and metadata readback confirm the name, MIME type and exact size. Sharing permissions were not changed. SHA-256:
+
+```text
+5fddd27ff448bc951e28f5ef36bb06f258817a41f6e1ef98d6fe26e79284d3e7
+```
+
+The actual ChatGPT account's eligibility, consent page, model catalog, plan allowance and LinkedIn keyboard inference remain physical-device acceptance checks. No Pixel or real account was available to the agent. Follow [the ChatGPT acceptance checklist](device-testing.md#chatgpt-sign-in-and-provider-changes). The public GitHub repository was verified empty and cloned separately. Its source snapshots exclude credentials, weights, build outputs and private history. The user explicitly authorized committing the v0.1.6 baseline followed by the v0.1.7 update and pushing both to main, without adding a project license. Existing third-party licenses are retained.
+
+## Historical version 0.1.6, llama.cpp replacement
 
 The user requested removing Nano and trying llama.cpp after the failed keyboard test. The current implementation removes Nano code, ML Kit and coroutines dependencies, and the SDK diagnostics disclosure because that SDK is no longer bundled. The retired NANO selection migrates to LLAMA with model setup required, preserving the cloud credential without selecting a paid provider.
 
@@ -23,7 +45,7 @@ APK: [rawplus-keyboard-0.1.6-debug.apk](https://drive.google.com/file/d/1PDqLse9
 
 Independent compiled re-review verified the observed missing-clause failure is rejected and all three previously good Raw+ outputs remain accepted. Two additional counterexamples, invented repetition and deletion of uppercase ER/ERM as fillers, were fixed with ordered-subsequence checks and case-aware filler recognition before the final successful build. Polished remains unchanged. Known decimal-punctuation, emoji-joiner and other semantic limits remain; the check is not a guarantee of unchanged meaning.
 
-Physical Pixel checks are required for model setup, offline operation, IME responsiveness, cancellation under CPU load, memory/heat/power behavior and real insertion into the three target apps. No physical device is attached. See [the local provider checklist](device-testing.md#provider-selection-and-local-llamacpp).
+Physical Pixel checks are required for model setup, offline operation, IME responsiveness, cancellation under CPU load, memory/heat/power behavior and real insertion into the three target apps. No physical device is attached. See [the local provider checklist](device-testing.md#retired-local-model-tests).
 
 ## User-reported Nano device result
 
@@ -51,7 +73,7 @@ APK: [rawplus-keyboard-0.1.5-debug.apk](https://drive.google.com/file/d/1L017aBo
 c6b665e468c4fe7ed1dfdc5275efe2c848cb84fad038ab3f01dcf5a8675b5b70
 ```
 
-Required device checks are listed in [current provider acceptance checks](device-testing.md#provider-selection-and-local-llamacpp). Distribution is complete; the user reports setup success and keyboard failure, while the exact failure and remaining acceptance checks are unverified. The checks below describe the previously distributed version.
+Required device checks are listed in [current provider acceptance checks](device-testing.md#retired-local-model-tests). Distribution is complete; the user reports setup success and keyboard failure, while the exact failure and remaining acceptance checks are unverified. The checks below describe the previously distributed version.
 
 ## Released 0.1.4 checks
 
@@ -87,7 +109,7 @@ The vanilla system image has no Google speech provider or Gboard, so it could no
 
 ## Still pending
 
-No physical Pixel is attached. T3's device tools also report that agent device access is turned off for this environment. The user installed earlier versions, supplied a version 0.1.2 screenshot, and described version 0.1.3's UI as neat. Their current feedback asks for cursor-based paragraph insertion, less Raw+ rewriting and local test logs. Version 0.1.4 addresses those requests in source; no new device result is claimed yet. Any real API key is entered privately on the phone. The following have not been established through agent runtime checks:
+No physical Pixel is attached. T3's device tools also report that agent device access is turned off for this environment. The user installed earlier versions, supplied a version 0.1.2 screenshot, described version 0.1.3's UI as neat, and subsequently reported the local-model results above. Version 0.1.4 implemented their cursor, prompt and local-history requests. Version 0.1.7 now needs a real ChatGPT account and keyboard test. Any real API key is entered privately on the phone. The following have not been established through agent runtime checks:
 
 - Pixel 10 on-device recognizer availability, en-GB installation/download and actual offline operation.
 - Native setup and keyboard UI startup, microphone permissions, secure token round trip, layout and switching on a fully booted device.
@@ -96,6 +118,7 @@ No physical Pixel is attached. T3's device tools also report that agent device a
 - Version 0.1.4 cursor tap accuracy/blinking, middle-of-draft partial following, original-preview tap transition, accessibility selection, long insertion review and cancel/interruption interaction. Local encrypted history round trips, logging controls, deletion versus queued writes, retention and document-provider exports also need Pixel checks. These were not established by the pure journal tests or source review.
 - Natural pause handling, long speech, disfluency preservation and real microphone interruption recovery.
 - Actual model output quality and the speaker's recognition of their own voice in Raw+.
+- ChatGPT browser consent and loopback return on the Pixel, account eligibility, authenticated model catalog, rotating token refresh/revocation, actual shared-plan usage and inference inside the IME. Pure tests and source review do not establish these service/device behaviors.
 - Insertion, cursor behavior and immediate Gboard switching in LinkedIn, WhatsApp and Gmail.
 
 Use [the device checklist](device-testing.md). The user's real LinkedIn-on-Pixel definition of done remains pending. Unit tests, an APK and source review do not establish it.

@@ -16,13 +16,17 @@ class EditingSettings(context: Context) {
     private val preferences = context.getSharedPreferences("backend", Context.MODE_PRIVATE)
 
     // The old "provider" field remains the provider owning the encrypted cloud credential.
-    // Choosing llama.cpp changes only "selected_provider", leaving that credential untouched.
+    // Choosing ChatGPT changes only "selected_provider", leaving that credential untouched.
     val savedProvider: EditingProvider
         get() = ProviderPolicy.savedProvider(preferences.getString("provider", null),
             preferences.getString("url", "").orEmpty(), preferences.contains("token"))
 
     val provider: EditingProvider
-        get() = ProviderPolicy.selectedProvider(preferences.getString("selected_provider", null), savedProvider)
+        get() {
+            val stored = preferences.getString("selected_provider", null)
+                ?: preferences.getString("provider", null)?.takeIf { it == "NANO" || it == "LLAMA" }
+            return ProviderPolicy.selectedProvider(stored, savedProvider)
+        }
 
     val url: String
         get() = savedUrl(provider)
@@ -31,14 +35,14 @@ class EditingSettings(context: Context) {
 
     fun savedUrl(provider: EditingProvider): String = when (provider) {
         EditingProvider.OPENAI -> EditingConfig.OPENAI_ENDPOINT
-        EditingProvider.LLAMA -> ""
+        EditingProvider.CHATGPT -> ""
         EditingProvider.BACKEND -> if (savedProvider == provider) preferences.getString("url", "").orEmpty() else ""
     }
 
-    fun savedConsent(provider: EditingProvider): Boolean = provider.external && provider == savedProvider &&
+    fun savedConsent(provider: EditingProvider): Boolean = provider != EditingProvider.CHATGPT && provider == savedProvider &&
         preferences.getBoolean("consent", false)
 
-    fun hasSavedCredential(provider: EditingProvider): Boolean = provider.external && provider == savedProvider &&
+    fun hasSavedCredential(provider: EditingProvider): Boolean = provider != EditingProvider.CHATGPT && provider == savedProvider &&
         !preferences.getString("token", "").isNullOrBlank() && !preferences.getString("iv", "").isNullOrBlank()
 
     /** Select a provider without moving, decrypting or deleting the saved cloud credential. */
@@ -50,7 +54,7 @@ class EditingSettings(context: Context) {
 
     fun read(): EditingConfig? {
         val selected = provider
-        if (selected == EditingProvider.LLAMA) return EditingConfig(selected, "", "")
+        if (selected == EditingProvider.CHATGPT) return EditingConfig(selected, "", "")
         if (selected != savedProvider) return null
         return readSavedCloud()
     }
@@ -71,7 +75,7 @@ class EditingSettings(context: Context) {
     }
 
     fun save(provider: EditingProvider, url: String, credential: String, consent: Boolean) {
-        if (provider == EditingProvider.LLAMA) {
+        if (provider == EditingProvider.CHATGPT) {
             select(provider)
             return
         }
@@ -100,7 +104,7 @@ class EditingSettings(context: Context) {
         }
     }
 
-    /** Remove all cloud credentials, preserving the selected provider and the downloaded local model. */
+    /** Remove API credentials, preserving provider selection, ChatGPT authorization and test history. */
     fun forgetCredentials() = forgetCredentials(provider)
 
     fun forget() = forgetCredentials()

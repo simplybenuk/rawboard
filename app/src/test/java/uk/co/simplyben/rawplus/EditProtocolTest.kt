@@ -23,13 +23,13 @@ class EditProtocolTest {
         assertFalse(backend.toString().contains(backend.credential))
     }
 
-    @Test fun `llama cpp never uses an HTTP endpoint body or response even with supplied cloud fields`() {
-        val local = EditingConfig(EditingProvider.LLAMA, "https://untrusted.example", direct.credential)
+    @Test fun `ChatGPT plan cannot reuse the API key transport even with supplied cloud fields`() {
+        val local = EditingConfig(EditingProvider.CHATGPT, "https://untrusted.example", direct.credential)
         val request = EditRequest(1, EditMode.RAW_PLUS, "my original words")
         assertThrows(IllegalStateException::class.java) { EditProtocol.endpoint(local) }
         assertThrows(IllegalStateException::class.java) { EditProtocol.body(local, request, skill) }
         assertThrows(IllegalStateException::class.java) { EditProtocol.response(local, "{\"text\":\"network text\"}") }
-        assertFalse(LlamaProtocol.prompt(request, skill).input.contains(direct.credential))
+        assertFalse(ChatGptProtocol.body(request, skill, "test-model").contains(direct.credential))
     }
 
     @Test fun `direct requests carry original source rules selected mode and no key in body`() {

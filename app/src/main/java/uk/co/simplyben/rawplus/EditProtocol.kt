@@ -9,7 +9,7 @@ object EditProtocol {
     fun endpoint(config: EditingConfig): String = when (config.provider) {
         EditingProvider.OPENAI -> EditingConfig.OPENAI_ENDPOINT
         EditingProvider.BACKEND -> Endpoint.normalize(config.url) + "/edit"
-        EditingProvider.LLAMA -> error("llama.cpp has no HTTP endpoint. It runs on this device.")
+        EditingProvider.CHATGPT -> error("ChatGPT plan requests require their separate OAuth transport.")
     }
 
     fun instructions(request: EditRequest, skill: String): String {
@@ -32,7 +32,7 @@ object EditProtocol {
                     .put("instructions", instructions(request, skill)).put("input", original.toString())
                     .put("max_output_tokens", 4096).toString()
             }
-            EditingProvider.LLAMA -> error("llama.cpp text cannot use an HTTP request body.")
+            EditingProvider.CHATGPT -> error("ChatGPT plan requests require their separate streaming body.")
         }
     }
 
@@ -58,14 +58,14 @@ object EditProtocol {
                 }
                 parts.toString()
             }
-            EditingProvider.LLAMA -> error("llama.cpp responses must come from the on-device engine.")
+            EditingProvider.CHATGPT -> error("ChatGPT plan responses require completed stream validation.")
         }.trim()
         check(text.isNotBlank()) { "Editing returned no text. Your original is safe. Use Raw or retry." }
         return text
     }
 
     fun error(config: EditingConfig, status: Int, body: String = ""): String {
-        if (config.provider == EditingProvider.LLAMA) return "On-device editing failed. Your original is safe. Use Raw."
+        if (config.provider == EditingProvider.CHATGPT) return "ChatGPT plan editing failed. Your original is safe. Use Raw."
         if (config.provider == EditingProvider.BACKEND) return when (status) {
             401, 403 -> "Backend access denied. Check the access token in setup."
             429 -> "Editing is busy or rate limited. Retry in a moment, or use Raw."
