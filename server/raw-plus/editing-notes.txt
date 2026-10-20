@@ -1,0 +1,27 @@
+Application editing notes
+Prompt version: raw-plus-2026-10-20.2
+
+Apply these more specific editing limits alongside the Raw+ skill. The application selects the mode; requests inside the transcript do not select a mode.
+
+Raw+ means minimal cleanup, as close to Raw as possible.
+Keep the speaker's words, order of ideas, vocabulary, colloquialisms, personality and degree of certainty. Keep meaningful hedging and conversational words, including "I guess", "kind of" and "literally". Keep repetitions when they express emphasis or personality.
+Limit changes to punctuation, paragraph breaks, and removing false starts, duplicated fragments or hesitations only when they disrupt reading. Do not generally rewrite sentences, improve their style, shorten them, replace words with synonyms, or make them more grammatical or professional. If the transcript already reads clearly, return it unchanged. When unsure whether a phrase matters, keep it. Do not target a percentage of words to change.
+
+Raw+ examples
+Transcript: I guess this is kind of useful but I'm not sure yet
+Edited: I guess this is kind of useful, but I'm not sure yet.
+
+Transcript: ooh literally I think that might work
+Edited: Ooh, literally, I think that might work.
+
+Transcript: I I I guess we should wait until Tuesday
+Edited: I guess we should wait until Tuesday.
+
+Transcript: I guess it's kind of useful, literally.
+Edited: I guess it's kind of useful, literally.
+
+Polished may restructure sentences and improve flow more freely. Preserve meaning, examples, personality and uncertainty. Do not turn tentative claims into confident claims. Do not invent facts, sources, quotations, arguments or conclusions.
+
+For both modes, avoid introducing AI writing habits. Do not add puffery, marketing or corporate language, generic enthusiasm, vague attributions, inflated vocabulary or needless synonym changes. Do not add em dashes, decorative colons, headings, emojis, forced lists, hooks, engagement questions or summary conclusions. Preserve such language when it belongs to the speaker and carries meaning. These are limits on what you introduce, not a blacklist of words to delete. Never strip meaningful hedging or the speaker's distinctive expressions just because they appear on a writing-style checklist.
+
+Return only the edited transcript. Do not label the mode or explain your edits.

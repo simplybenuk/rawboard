@@ -1,0 +1,60 @@
+cmake_minimum_required(VERSION 3.22.1)
+project(rawplus_local_model LANGUAGES C CXX)
+
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+# This remains a debuggable APK, with optimized CPU kernels for a useful test.
+set(CMAKE_BUILD_TYPE Release CACHE STRING "" FORCE)
+# Bound compiler RAM use on the development computer.
+set(CMAKE_JOB_POOLS rawplus_compile=2 rawplus_link=1)
+set(CMAKE_JOB_POOL_COMPILE rawplus_compile)
+set(CMAKE_JOB_POOL_LINK rawplus_link)
+
+# Compile only the local CPU backend. No server, network client, GPU, dynamic
+# backend discovery, or build-time dependency downloads enter the APK.
+set(BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
+set(LLAMA_BUILD_COMMON OFF CACHE BOOL "" FORCE)
+set(LLAMA_BUILD_TESTS OFF CACHE BOOL "" FORCE)
+set(LLAMA_BUILD_TOOLS OFF CACHE BOOL "" FORCE)
+set(LLAMA_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
+set(LLAMA_BUILD_SERVER OFF CACHE BOOL "" FORCE)
+set(LLAMA_BUILD_APP OFF CACHE BOOL "" FORCE)
+set(LLAMA_BUILD_MTMD OFF CACHE BOOL "" FORCE)
+set(LLAMA_OPENSSL OFF CACHE BOOL "" FORCE)
+set(LLAMA_SUBPROCESS OFF CACHE BOOL "" FORCE)
+set(LLAMA_CONNECT OFF CACHE BOOL "" FORCE)
+set(GGML_NATIVE OFF CACHE BOOL "" FORCE)
+set(GGML_BACKEND_DL OFF CACHE BOOL "" FORCE)
+set(GGML_CPU ON CACHE BOOL "" FORCE)
+set(GGML_CPU_ALL_VARIANTS OFF CACHE BOOL "" FORCE)
+set(GGML_CPU_KLEIDIAI OFF CACHE BOOL "" FORCE)
+set(GGML_OPENMP OFF CACHE BOOL "" FORCE)
+set(GGML_LLAMAFILE OFF CACHE BOOL "" FORCE)
+set(GGML_CUDA OFF CACHE BOOL "" FORCE)
+set(GGML_VULKAN OFF CACHE BOOL "" FORCE)
+set(GGML_OPENCL OFF CACHE BOOL "" FORCE)
+set(GGML_METAL OFF CACHE BOOL "" FORCE)
+set(GGML_RPC OFF CACHE BOOL "" FORCE)
+set(GGML_BLAS OFF CACHE BOOL "" FORCE)
+set(GGML_CCACHE OFF CACHE BOOL "" FORCE)
+# Record the vendored revision without relying on the enclosing repository.
+set(LLAMA_BUILD_COMMIT "39da130fcd1b6ca47d3c0522a40eccff41ea3dfb" CACHE STRING "" FORCE)
+set(LLAMA_BUILD_NUMBER 0 CACHE STRING "" FORCE)
+
+add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/../../../../third_party/llama.cpp"
+                 "${CMAKE_CURRENT_BINARY_DIR}/llama")
+
+add_library(rawplus_llama SHARED rawplus_llama.cpp)
+target_link_libraries(rawplus_llama PRIVATE llama)
+target_compile_options(rawplus_llama PRIVATE -Wall -Wextra -Wpedantic)
+if(ANDROID)
+    if(NOT ANDROID_ABI STREQUAL "arm64-v8a")
+        message(FATAL_ERROR "This Pixel prototype supports arm64-v8a only")
+    endif()
+    target_link_options(rawplus_llama PRIVATE "-Wl,-z,max-page-size=16384")
+else()
+    # Enables a host JNI smoke test without changing the Android build.
+    find_package(JNI REQUIRED)
+    target_include_directories(rawplus_llama PRIVATE ${JNI_INCLUDE_DIRS})
+endif()

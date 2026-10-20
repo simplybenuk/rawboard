@@ -1,0 +1,11 @@
+Upstream: https://github.com/ggml-org/llama.cpp
+Revision: 39da130fcd1b6ca47d3c0522a40eccff41ea3dfb
+Archive: https://codeload.github.com/ggml-org/llama.cpp/tar.gz/39da130fcd1b6ca47d3c0522a40eccff41ea3dfb
+Archive SHA-256: 4a1e2077fe776e47371e5da3008892074e9b9b5d3aa8d76ae0962a0669b70715
+License: MIT, retained in LICENSE, plus component license files under ggml/vendor.
+
+Vendored unmodified subset: CMakeLists.txt, LICENSE, cmake/, include/, src/,
+ggml/, vendor/. Standalone tools, servers, examples, model files, and Python
+packages are omitted. App CMake disables common, tools, examples, server, app,
+OpenSSL, subprocesses, dynamic backends and all GPU backends. CPU inference only.
+The app's JNI bridge is outside this directory, in app/src/main/cpp/.

@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="paper">#F5F8F5</color>
+    <color name="surface">#FFFFFF</color>
+    <color name="ink">#1C2B26</color>
+    <color name="muted">#4E6057</color>
+    <color name="hint">#53665B</color>
+    <color name="primary">#146B55</color>
+    <color name="on_primary">#FFFFFF</color>
+    <color name="secondary">#E1EAE2</color>
+    <color name="recording">#9A3434</color>
+    <color name="accent">#146B55</color>
+    <color name="control_highlight">#33146B55</color>
+</resources>
